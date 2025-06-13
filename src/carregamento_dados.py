@@ -1,6 +1,7 @@
 import pandas as pd
 import re
-
+CAMINHO_PROJETOS = 'data/projetodata.txt'
+CAMINHO_ALUNOS = 'data/alunodata.txt'
 def carregar_data( CAMINHO_PROJETOS , CAMINHO_ALUNOS ):
     try:
         with open(CAMINHO_PROJETOS, 'r', encoding='utf-8') as arquivo:

@@ -1,5 +1,3 @@
-
-
 import pandas as pd
 from carregamento_dados import carregar_data, CAMINHO_PROJETOS, CAMINHO_ALUNOS #teste
 
@@ -29,6 +27,6 @@ def preparar_listas_preferencia( df_projetos , df_alunos ):  # validacao das pre
 
     print(f" preferências validadas para o aluno 200  {a_id}: {prefs_validadas_aluno}") #ultimo aluno
 
-
-preparar_listas_preferencia( carregar_data( CAMINHO_PROJETOS , CAMINHO_ALUNOS )[0] , carregar_data( CAMINHO_PROJETOS , CAMINHO_ALUNOS )[1] )
+df_projetos, df_alunos = carregar_data(CAMINHO_PROJETOS, CAMINHO_ALUNOS)
+preparar_listas_preferencia(df_projetos, df_alunos)
 
