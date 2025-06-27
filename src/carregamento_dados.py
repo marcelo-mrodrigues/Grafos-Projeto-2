@@ -22,6 +22,11 @@ def carregar_data(CAMINHO_PROJETOS, CAMINHO_ALUNOS):
                 dados_projetos.append([f"P{pid}",
                                        int(vagas),
                                        float(nota_minima)])
+            
+            ################################################
+            else:
+                print(f"Linha ignorada no arquivo de projetos: {linha.strip()}")
+            # Para DEBUG, comentar se não estiver utilizando
 
         df_projetos = pd.DataFrame(
             dados_projetos, columns=["id", "vagas", "nota_minima"]

@@ -1,6 +1,4 @@
 import pandas as pd
-from carregamento_dados import carregar_data
-from carregamento_dados import CAMINHO_PROJETOS, CAMINHO_ALUNOS
 
 
 def preparar_listas_preferencia(
@@ -15,6 +13,9 @@ def preparar_listas_preferencia(
         prefs_validadas_aluno = []
 
         for proj_id in aluno["preferencia"]:
+            
+            if proj_id not in df_projetos.index:
+                print(f" Projeto {proj_id} não encontrado para aluno {a_id}")
 
             if proj_id in df_projetos.index:
 
