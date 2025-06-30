@@ -3,9 +3,14 @@ import networkx as nx
 from typing import Dict, List
 
 
-def desenhar_emparelhamento_muitos_para_muitos(emparelhamento: Dict[str, List[str]]):
+def desenhar_emparelhamento_muitos_para_muitos(emparelhamento: Dict[str, List[str]],iteracao: int = None,lado: str = None, ordem: str = None):
     """
     Visualiza o grafo bipartido de emparelhamento onde um aluno pode estar em vários projetos.
+    
+    Parâmetros:
+    - emparelhamento: dict de aluno -> lista de projetos
+    - iteracao: número da iteração (1 a 10)
+    - lado: "aluno" ou "projeto", indica quem propôs nessa iteração
     """
     G = nx.Graph()
 
@@ -16,21 +21,27 @@ def desenhar_emparelhamento_muitos_para_muitos(emparelhamento: Dict[str, List[st
     G.add_nodes_from(alunos, bipartite=0)
     G.add_nodes_from(projetos, bipartite=1)
 
-    # Adiciona arestas aluno → projeto (muitos para muitos)
-    for aluno, projetos in emparelhamento.items():
-        for projeto in projetos:
+    # Adiciona arestas aluno → projeto
+    for aluno, lista_projetos in emparelhamento.items():
+        for projeto in lista_projetos:
             G.add_edge(aluno, projeto)
 
-    # Layout bipartido
-    pos = nx.bipartite_layout(G, alunos)
+     # Layout com mais espaçamento manual
+    spacing = 1.5
+    pos = {}
+    for i, node in enumerate(alunos):
+        pos[node] = (0, i * spacing)
+    for i, node in enumerate(projetos):
+        pos[node] = (10, i * spacing)
 
-    # Cores: azul para alunos, verde para projetos
-    node_colors = [
-        "skyblue" if node in alunos else "lightgreen" for node in G.nodes()
-    ]
+    node_colors = ["skyblue" if n in alunos else "lightgreen" for n in G.nodes()]
 
-    # Desenho
-    plt.figure(figsize=(14, 10))
+    # Título completo da iteração
+    titulo = "Grafo de Emparelhamento"
+    if iteracao and lado and ordem:
+        titulo = f"Iteração {iteracao} — {lado} propõe (ordem: {ordem})"
+
+    plt.figure(figsize=(18, 30))  # pode ajustar a altura
     nx.draw(
         G,
         pos,
@@ -40,7 +51,7 @@ def desenhar_emparelhamento_muitos_para_muitos(emparelhamento: Dict[str, List[st
         node_size=800,
         font_size=8
     )
-    plt.title("Grafo de Emparelhamento (Muitos para Muitos)")
+    plt.title(titulo)
     plt.axis("off")
     plt.tight_layout()
     plt.show()
