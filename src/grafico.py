@@ -1,40 +1,46 @@
 import matplotlib.pyplot as plt
 import networkx as nx
-from parser import Aluno, Projeto
-from typing import Dict
+from typing import Dict, List
 
-def desenhar_emparelhamento(emparelhamento: Dict[str, str]):
+
+def desenhar_emparelhamento_muitos_para_muitos(emparelhamento: Dict[str, List[str]]):
     """
-    Gera a visualização do grafo bipartido com os emparelhamentos realizados.
+    Visualiza o grafo bipartido de emparelhamento onde um aluno pode estar em vários projetos.
     """
     G = nx.Graph()
 
     alunos = list(emparelhamento.keys())
-    projetos = list(set(emparelhamento.values()))
+    projetos = list({p for projetos in emparelhamento.values() for p in projetos})
 
     # Adiciona nós bipartidos
     G.add_nodes_from(alunos, bipartite=0)
     G.add_nodes_from(projetos, bipartite=1)
 
-    # Adiciona as arestas aluno -> projeto
-    edges = [(aluno, projeto) for aluno, projeto in emparelhamento.items()]
-    G.add_edges_from(edges)
+    # Adiciona arestas aluno → projeto (muitos para muitos)
+    for aluno, projetos in emparelhamento.items():
+        for projeto in projetos:
+            G.add_edge(aluno, projeto)
 
-    # Posições com layout bipartido
+    # Layout bipartido
     pos = nx.bipartite_layout(G, alunos)
 
-    # Desenha nós e arestas
-    plt.figure(figsize=(12, 8))
+    # Cores: azul para alunos, verde para projetos
+    node_colors = [
+        "skyblue" if node in alunos else "lightgreen" for node in G.nodes()
+    ]
+
+    # Desenho
+    plt.figure(figsize=(14, 10))
     nx.draw(
         G,
         pos,
         with_labels=True,
-        node_color=["lightblue" if node in alunos else "lightgreen" for node in G.nodes()],
+        node_color=node_colors,
         edge_color="gray",
-        node_size=1000,
-        font_size=10
+        node_size=800,
+        font_size=8
     )
-    plt.title("Emparelhamento Aluno ↔ Projeto")
+    plt.title("Grafo de Emparelhamento (Muitos para Muitos)")
     plt.axis("off")
     plt.tight_layout()
     plt.show()
