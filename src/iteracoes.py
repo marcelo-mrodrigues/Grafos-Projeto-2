@@ -1,5 +1,5 @@
 from parser import Aluno, Projeto
-from algoritmo_emparelhamento import emparelhamento_perfeito_aluno_propoe, emparelhamento_perfeito_projeto_propoe
+from algoritmo_emparelhamento import emparelhamento_estavel_aluno_propoe, emparelhamento_estavel_projeto_propoe
 from typing import Dict, List
 import random
 import copy
@@ -69,11 +69,11 @@ def executar_10_iteracoes(
         if lado == "aluno":
             ordem_ids = aplicar_variacao_ordem(list(alunos.keys()), ordem)
             alunos = {aid: alunos[aid] for aid in ordem_ids}
-            resultado = emparelhamento_perfeito_aluno_propoe(alunos, projetos)
+            resultado = emparelhamento_estavel_aluno_propoe(alunos, projetos)
         else:
             ordem_ids = aplicar_variacao_ordem(list(projetos.keys()), ordem)
             projetos = {pid: projetos[pid] for pid in ordem_ids}
-            resultado = emparelhamento_perfeito_projeto_propoe(alunos, projetos)
+            resultado = emparelhamento_estavel_projeto_propoe(alunos, projetos)
 
         resultados.append(resultado)
 

@@ -3,35 +3,78 @@ from parser import Aluno, Projeto
 import copy
 
 
-def emparelhamento_perfeito_aluno_propoe(alunos_input: Dict[str, Aluno],projetos_input: Dict[str, Projeto]) -> Dict[str, list]:
+def emparelhamento_estavel_aluno_propoe(alunos_input: Dict[str, Aluno],projetos_input: Dict[str, Projeto]) -> Dict[str, list]:
     """
-    Emparelhamento perfeito onde os alunos propõem aos seus projetos preferidos.
-    Cada aluno pode ser aceito em até 3 projetos.
+    Emparelhamento estável (muitos-para-muitos) onde os alunos propõem e projetos podem substituir.
+    Cada aluno pode estar em até 3 projetos.
+    Projetos substituem alunos com nota mais baixa.
     """
     alunos = copy.deepcopy(alunos_input)
     projetos = copy.deepcopy(projetos_input)
 
     emparelhamento = {aluno_id: [] for aluno_id in alunos}
+    aluno_cargas = {aluno_id: 0 for aluno_id in alunos}
+    proposta_atual = {aluno_id: 0 for aluno_id in alunos}
+    
+    livres = list(alunos.keys())
 
-    for aluno_id, aluno in alunos.items():
-        projetos_preferidos = aluno.preferencias[:3]
+    # O loop continua enquanto houver alunos livres com propostas
+    while livres:
+        aluno_id = livres.pop(0)
+        aluno = alunos[aluno_id]
 
-        for projeto_id in projetos_preferidos:
-            if projeto_id not in projetos:
-                continue  # projeto inválido (ex: P51, P52...)
+        # Se o aluno já está em 3 projetos, ele não faz mais propostas
+        if aluno_cargas[aluno_id] >= 3:
+            continue  
+        
+        # Verifica se o aluno ainda tem projetos em sua lista para propor
+        if proposta_atual[aluno_id] >= len(aluno.preferencias):
+            continue  
+        
+        # Pega o próximo projeto da lista de preferências
+        projeto_id = aluno.preferencias[proposta_atual[aluno_id]]
+        proposta_atual[aluno_id] += 1
+        
+        # ignora projetos inválidos 
+        if projeto_id not in projetos:
+            continue
 
-            projeto = projetos[projeto_id]
+        projeto = projetos[projeto_id]
+        
+        # ignora projetos com nota insuficiente
+        if aluno.nota < projeto.requisito:
+            continue
 
-            if aluno.nota < projeto.requisito:
-                continue  # aluno não atende o requisito
+        if projeto.alunos_aceitos is None:
+            projeto.alunos_aceitos = []
 
-            if len(projeto.alunos_aceitos) < projeto.vagas:
-                # Aceita o aluno no projeto
+        # Vaga disponível
+        if len(projeto.alunos_aceitos) < projeto.vagas:
+            projeto.alunos_aceitos.append(aluno_id)
+            emparelhamento[aluno_id].append(projeto_id)
+            aluno_cargas[aluno_id] += 1
+        else:
+            # Tenta substituir o pior aluno atual
+            pior_aluno = min(
+                projeto.alunos_aceitos,
+                key=lambda a_id: alunos[a_id].nota
+            )
+
+            if aluno.nota > alunos[pior_aluno].nota:
+                # Substitui o pior aluno inserido no projeto
+                projeto.alunos_aceitos.remove(pior_aluno)
                 projeto.alunos_aceitos.append(aluno_id)
-                emparelhamento[aluno_id].append(projeto_id)
 
-                if len(emparelhamento[aluno_id]) == 3:
-                    break  # aluno já está em 3 projetos
+                # O aluno rejeitado volta para a fila para tentar sua próxima opção
+                emparelhamento[pior_aluno].remove(projeto_id)
+                aluno_cargas[pior_aluno] -= 1
+                livres.append(pior_aluno)  
+
+                emparelhamento[aluno_id].append(projeto_id)
+                aluno_cargas[aluno_id] += 1
+            else:
+                # Aluno rejeitado e continua livre por ser pior
+                livres.append(aluno_id)
 
     return emparelhamento
 
@@ -39,11 +82,11 @@ def emparelhamento_perfeito_aluno_propoe(alunos_input: Dict[str, Aluno],projetos
 # Não consegui pensar em uma lógica pra fazer com apenas um algoritmo faça ambos, então separei em 2 #
 #----------------------------------------------------------------------------------------------------#
 
-def emparelhamento_perfeito_projeto_propoe(alunos_input: Dict[str, Aluno],projetos_input: Dict[str, Projeto], verbose: bool = False) -> Dict[str, list]:
+def emparelhamento_estavel_projeto_propoe(alunos_input: Dict[str, Aluno],projetos_input: Dict[str, Projeto], verbose: bool = False) -> Dict[str, list]:
     """
-    Emparelhamento perfeito onde os projetos escolhem os alunos que os preferem.
-    Cada projeto pode aceitar até sua capacidade máxima.
-    Cada aluno pode estar em no máximo 3 projetos.
+    Emparelhamento estável (muitos-para-muitos) onde os projetos propõem.
+    Alunos aceitam até 3 projetos, substituindo os menos desejados.
+    Projetos selecionam candidatos por preferência e nota.
     """
     alunos = copy.deepcopy(alunos_input)
     projetos = copy.deepcopy(projetos_input)
@@ -67,77 +110,39 @@ def emparelhamento_perfeito_projeto_propoe(alunos_input: Dict[str, Aluno],projet
 
         for _, aluno_id in candidatos:
             if len(projeto.alunos_aceitos) >= projeto.vagas:
-                break  # vagas completas
+                break
 
-            if aluno_cargas[aluno_id] >= 3:
-                continue  # aluno já em 3 projetos
+            projetos_do_aluno = emparelhamento[aluno_id]
 
-            projeto.alunos_aceitos.append(aluno_id)
-            emparelhamento[aluno_id].append(projeto.codigo)
-            aluno_cargas[aluno_id] += 1
-            
-            if verbose:
-                print(f"{projeto.codigo} → {aluno_id} (nota OK, vagas OK)")
-
-    return emparelhamento
-
-def emparelhamento_estavel_aluno_propoe( # Gale-Shapley
-    alunos_input, projetos_input
-):
-    alunos = copy.deepcopy(alunos_input)
-    projetos = copy.deepcopy(projetos_input)
-
-    emparelhamento = {aluno_id: [] for aluno_id in alunos} # alocações finais
-
-    alunos_livres = list(alunos.keys()) # alocações finais
-
-    # dicionário para rastrear o progresso de cada aluno em sua lista de preferências
-    propostas_feitas = {aluno_id: 0 for aluno_id in alunos}
-
-    # O loop continua enquanto houver alunos livres com propostas
-    while alunos_livres:
-        aluno_id = alunos_livres.pop(0)
-        aluno = alunos[aluno_id]
-
-        # Se o aluno já está em 3 projetos, ele não faz mais propostas
-        if len(emparelhamento[aluno_id]) >= 3:
-            continue
-
-        # Verifica se o aluno ainda tem projetos em sua lista para propor
-        if propostas_feitas[aluno_id] < len(aluno.preferencias):
-            # Pega o próximo projeto da lista de preferências
-            projeto_id = aluno.preferencias[propostas_feitas[aluno_id]]
-            propostas_feitas[aluno_id] += 1
-
-            # ignora projetos inválidos e nota insuficiente.
-            if projeto_id not in projetos or aluno.nota < projetos[projeto_id].requisito:
-                alunos_livres.append(aluno_id)  # Devolve o aluno à fila para tentar o próximo
-                continue
-
-            projeto = projetos[projeto_id]
-
-            # Projeto tem uma vaga livre. Aceita o aluno.
-            if len(projeto.alunos_aceitos) < projeto.vagas:
+            if len(projetos_do_aluno) < 3:
+                # Aluno ainda tem espaço
                 projeto.alunos_aceitos.append(aluno_id)
-                emparelhamento[aluno_id].append(projeto_id)
+                emparelhamento[aluno_id].append(projeto.codigo)
+                aluno_cargas[aluno_id] += 1
             else:
-                # CASO O Projeto está cheio. Compara o aluno atual com o pior nota já alocado.
-                # Em caso de empate, o primeiro será retirado
-                pior_aluno_id = min(projeto.alunos_aceitos, key=lambda id: alunos[id].nota)
-                
-                if aluno.nota > alunos[pior_aluno_id].nota:
-                    # faz a troca
-                    projeto.alunos_aceitos.remove(pior_aluno_id)
-                    projeto.alunos_aceitos.append(aluno_id)
-                    
-                    # -> dicionário de emparelhamento
-                    emparelhamento[pior_aluno_id].remove(projeto_id)
-                    emparelhamento[aluno_id].append(projeto_id)
+                # Aluno já está em 3 projetos — verificar se quer trocar
+                # Critério de substituição: substituir o projeto menos preferido
+                preferencias = alunos[aluno_id].preferencias
+                atuais = emparelhamento[aluno_id]
 
-                    # O aluno rejeitado volta para a fila para tentar sua próxima opção
-                    alunos_livres.append(pior_aluno_id)
-                else:
-                    # ele continua livre porque não é melhor
-                    alunos_livres.append(aluno_id)
-        
+                menos_desejado = max(
+                    atuais,
+                    key=lambda p_id: preferencias.index(p_id)
+                )
+
+                # Se projeto atual é mais desejado que o menos desejado
+                if preferencias.index(projeto.codigo) < preferencias.index(menos_desejado):
+                    # Substitui
+                    emparelhamento[aluno_id].remove(menos_desejado)
+                    emparelhamento[aluno_id].append(projeto.codigo)
+
+                    # Atualiza projeto antigo
+                    for p in projetos.values():
+                        if menos_desejado in p.codigo and aluno_id in p.alunos_aceitos:
+                            p.alunos_aceitos.remove(aluno_id)
+                            break
+
+                    projeto.alunos_aceitos.append(aluno_id)
+
     return emparelhamento
+
