@@ -63,6 +63,12 @@ pip install -r requirements.txt
 ```bash
 jupyter notebook
 ```
+   Ou
+
+```bash
+jupyter lab
+``` 
+
 # 🔧 Funcionalidades
 As principais funções implementadas são:
 
